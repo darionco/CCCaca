@@ -15,7 +15,7 @@
 #import "CCDirectorIOS+CCCacaScreenFilter.h"
 
 #pragma mark - CCCaca Defines
-#define CC_CACA_FONT_NAME "American Typewriter Bold"
+#define CC_CACA_FONT_NAME "AmericanTypewriter-Bold"
 
 #pragma mark - NSString Constants
 const NSString *kCCCacaRender32bitColor = @"_getColor32BitForIndex:";
@@ -182,12 +182,12 @@ struct caca_dither
     NSMutableDictionary *retDictionary = [[NSMutableDictionary alloc] init];
     
     // create a uifont for drawing //
-    CGContextSelectFont(context, CC_CACA_FONT_NAME, fontSize * CC_CONTENT_SCALE_FACTOR(), kCGEncodingMacRoman);
+    UIFont *uiFont = [UIFont fontWithName:@CC_CACA_FONT_NAME size:fontSize * CC_CONTENT_SCALE_FACTOR()];
     CGContextSetTextDrawingMode(context, kCGTextFill);
     CGContextSetGrayFillColor(context, 0.25f, 1.0f);
     CGContextFillRect(context, CGRectMake(0, 0, POTWide, POTHigh));
     CGContextSetGrayFillColor(context, 1.0f, 1.0f);
-    
+    UIGraphicsPushContext(context);
     for (int i = 0; i < cacaDither->glyph_count; ++i)
     {
         // advance the rect //
@@ -197,8 +197,13 @@ struct caca_dither
         // create a string from the character //
         NSString *charString = [[NSString alloc] initWithFormat:@"%c", cacaDither->glyphs[i]];
         
+        // calculate the right point to render the text //
+        CGSize charSize = [charString sizeWithFont:uiFont];
+        CGPoint charPoint = CGPointMake(glyphRenderRect.origin.x + (glyphRenderRect.size.width * 0.5f) - (charSize.width * 0.5f),
+                                        glyphRenderRect.origin.y + (glyphRenderRect.size.height * 0.5f) - (charSize.height * 0.5f));
+        
         // draw the text //
-        CGContextShowTextAtPoint(context, glyphRenderRect.origin.x, glyphRenderRect.origin.y, [charString UTF8String], [charString length]);
+        [charString drawAtPoint:charPoint withFont:uiFont];
         
         // save the glyph data //
         [retDictionary setObject:[NSValue valueWithCGRect:CGRectMake(glyphRenderRect.origin.x / POTWide,
@@ -210,7 +215,7 @@ struct caca_dither
         [charString release];
         
     }
-    
+    UIGraphicsPopContext();
     // clean up //
 	CGContextRelease(context);
     
@@ -573,13 +578,13 @@ struct caca_dither
                 top		= textureCoords.origin.y;
                 bottom	= top + textureCoords.size.height;
                 m_quadBuffers[m_workingQuadBuffer][i].bl.texCoords.u = left;
-                m_quadBuffers[m_workingQuadBuffer][i].bl.texCoords.v = bottom;
+                m_quadBuffers[m_workingQuadBuffer][i].bl.texCoords.v = top;
                 m_quadBuffers[m_workingQuadBuffer][i].br.texCoords.u = right;
-                m_quadBuffers[m_workingQuadBuffer][i].br.texCoords.v = bottom;
+                m_quadBuffers[m_workingQuadBuffer][i].br.texCoords.v = top;
                 m_quadBuffers[m_workingQuadBuffer][i].tl.texCoords.u = left;
-                m_quadBuffers[m_workingQuadBuffer][i].tl.texCoords.v = top;
+                m_quadBuffers[m_workingQuadBuffer][i].tl.texCoords.v = bottom;
                 m_quadBuffers[m_workingQuadBuffer][i].tr.texCoords.u = right;
-                m_quadBuffers[m_workingQuadBuffer][i].tr.texCoords.v = top;
+                m_quadBuffers[m_workingQuadBuffer][i].tr.texCoords.v = bottom;
             }
         }
     }
