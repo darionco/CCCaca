@@ -21,13 +21,8 @@
 @implementation CCDirectorIOS (CCCacaScreenFilter)
 -(CCCacaScreenFilter**) getCCCacaScreenFilterVar
 {
-    static CCCacaScreenFilter **__CCCacaScreenFilter__ = nil;
-    if (!__CCCacaScreenFilter__)
-    {
-        __CCCacaScreenFilter__ = (CCCacaScreenFilter**)malloc(sizeof(CCCacaScreenFilter*));
-        (*__CCCacaScreenFilter__) = nil;
-    }
-    return __CCCacaScreenFilter__;
+    static CCCacaScreenFilter *__CCCacaScreenFilter__ = nil;
+    return &__CCCacaScreenFilter__;
 }
 
 -(void) setCCCacaFilter:(CCCacaScreenFilter*)screenFilter
