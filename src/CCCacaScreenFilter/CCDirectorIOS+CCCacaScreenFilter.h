@@ -13,4 +13,5 @@
 -(CCCacaScreenFilter**) getCCCacaScreenFilterVar;
 -(void) setCCCacaFilter:(CCCacaScreenFilter*)screenFilter;
 -(void) drawSceneCCCacaSceneFilter;
++(IMP) getCCCacaDrawSceneMethod;
 @end

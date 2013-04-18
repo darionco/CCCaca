@@ -71,6 +71,7 @@ typedef void(*CCDirectorIOSDrawScene)(id, SEL);
     BOOL m_enabled;
 }
 
+// STILL ARC COMPATIBLE //
 @property (nonatomic, retain) CCScene *sceneToFilter;
 @property (nonatomic, readonly) BOOL enabled;
 @property (atomic, assign) uint8_t customColorShift; // should be a number between 1 and 7 // maybe add a check in the assign method? // -Dario //

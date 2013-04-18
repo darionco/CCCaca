@@ -101,6 +101,10 @@ enum {
 		
         groundBody->CreateFixture(&groundBox,0);
 		
+        
+        // INITIALIZE THE CACA FILTER //
+        m_cacaFilter = [[CCCacaScreenFilter alloc] initWithFontSize:7];
+        [m_cacaFilter enable];
 		
 		//Set up sprite
 		
@@ -110,15 +114,12 @@ enum {
 		[self addNewSpriteWithCoords:ccp(screenSize.width/2, screenSize.height/2)];
 		
 		CCLabelTTF *label = [CCLabelTTF labelWithString:@"Tap screen" fontName:@"Marker Felt" fontSize:32];
-		[self addChild:label z:0];
+		[m_cacaFilter addChild:label z:0];
 		[label setColor:ccc3(0,0,255)];
 		label.position = ccp( screenSize.width/2, screenSize.height-50);
 		
 		[self schedule: @selector(tick:)];
         
-        // INITIALIZE THE CACA FILTER //
-        m_cacaFilter = [[CCCacaScreenFilter alloc] initWithFontSize:7];
-        [m_cacaFilter enable];
 	}
 	return self;
 }
@@ -251,6 +252,9 @@ enum {
 	world = NULL;
 	
 	delete m_debugDraw;
+    
+    // RELEASE THE CACA FILTER //
+    [m_cacaFilter release];
 
 	// don't forget to call "super dealloc"
 	[super dealloc];

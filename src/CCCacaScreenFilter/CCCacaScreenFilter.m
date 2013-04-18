@@ -13,9 +13,12 @@
 #import "ccMacros.h"
 #import "ccUtils.h"
 #import "CCDirectorIOS+CCCacaScreenFilter.h"
+//#import "CCGLProgram.h"
+#import "cocos2d.h"
 
 #pragma mark - CCCaca Defines
 #define CC_CACA_FONT_NAME "AmericanTypewriter-Bold"
+#define CC_CACA_SCALE_FACTOR CC_CONTENT_SCALE_FACTOR()
 
 #pragma mark - NSString Constants
 const NSString *kCCCacaRender32bitColor = @"_getColor32BitForIndex:";
@@ -174,7 +177,7 @@ struct caca_dither
 	if(!context)
     {
 		free(data);
-		[self release];
+        CC_ARC_RELEASE(self);
 		return nil;
 	}
 	
@@ -182,7 +185,7 @@ struct caca_dither
     NSMutableDictionary *retDictionary = [[NSMutableDictionary alloc] init];
     
     // create a uifont for drawing //
-    UIFont *uiFont = [UIFont fontWithName:@CC_CACA_FONT_NAME size:fontSize * CC_CONTENT_SCALE_FACTOR()];
+    UIFont *uiFont = [UIFont fontWithName:@CC_CACA_FONT_NAME size:fontSize * CC_CACA_SCALE_FACTOR];
     CGContextSetTextDrawingMode(context, kCGTextFill);
     CGContextSetGrayFillColor(context, 0.25f, 1.0f);
     CGContextFillRect(context, CGRectMake(0, 0, POTWide, POTHigh));
@@ -212,7 +215,7 @@ struct caca_dither
                                                                      glyphRenderRect.size.height / POTHigh)] forKey:charString];
         
         // clean up //
-        [charString release];
+        CC_ARC_RELEASE(charString);
         
     }
     UIGraphicsPopContext();
@@ -237,7 +240,6 @@ struct caca_dither
     
     // save the texture name //
     [retDictionary setObject:[NSNumber numberWithUnsignedInteger:name] forKey:@"texture"];
-
     
     return retDictionary;
 }
@@ -255,31 +257,33 @@ struct caca_dither
     {
         GLint oldFrameBuffer;
         GLint oldRenderBuffer;
-        glGetIntegerv(CC_GL_FRAMEBUFFER_BINDING, &oldFrameBuffer);
-        glGetIntegerv(GL_RENDERBUFFER_BINDING_OES, &oldRenderBuffer); // not compatible with OSX :( // for now! //
+        
+        
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFrameBuffer);
+        glGetIntegerv(GL_RENDERBUFFER_BINDING, &oldRenderBuffer); // not compatible with OSX :( // for now! //
         
         m_backingSize = [[CCDirector sharedDirector] winSizeInPixels];
         
-        glGenFramebuffersOES(1, &m_frameBuffer);
-        glBindFramebufferOES(GL_FRAMEBUFFER_OES, m_frameBuffer);
+        glGenFramebuffers(1, &m_frameBuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
         
-        glGenRenderbuffersOES(1, &m_renderBuffer);
-        glBindRenderbufferOES(GL_RENDERBUFFER_OES, m_renderBuffer);
-        glRenderbufferStorageOES(GL_RENDERBUFFER_OES,
+        glGenRenderbuffers(1, &m_renderBuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, m_renderBuffer);
+        glRenderbufferStorage(GL_RENDERBUFFER,
                                  GL_RGBA8_OES,
                                  m_backingSize.width,
                                  m_backingSize.height);
         
-        glFramebufferRenderbufferOES(GL_FRAMEBUFFER_OES,
-                                     GL_COLOR_ATTACHMENT0_OES,
-                                     GL_RENDERBUFFER_OES,
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                                     GL_COLOR_ATTACHMENT0,
+                                     GL_RENDERBUFFER,
                                      m_renderBuffer);
         
-        GLenum status = glCheckFramebufferStatusOES(GL_FRAMEBUFFER_OES);
-        NSAssert(status == GL_FRAMEBUFFER_COMPLETE_OES, @"Error creating framebuffer!");
+        GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        NSAssert(status == GL_FRAMEBUFFER_COMPLETE, @"Error creating framebuffer!");
         
-        glBindFramebuffer(CC_GL_FRAMEBUFFER, oldFrameBuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER_OES, oldRenderBuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, oldFrameBuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, oldRenderBuffer);
         
         m_fontSize = fontSize;
         
@@ -288,8 +292,8 @@ struct caca_dither
         CGRect fontRect = CGFontGetFontBBox(font);
         CGFloat units = CGFontGetUnitsPerEm(font);
         
-        m_fontQuad = CGSizeMake(ceilf(((fontRect.size.width - fontRect.origin.x) / units) * m_fontSize * 0.325f * CC_CONTENT_SCALE_FACTOR()), // the text's bounding box seees too wide, 0.325 is there to compensate, this number was eyeballed :( //
-                                    ceilf(((fontRect.size.height - fontRect.origin.y) / units) * m_fontSize * 0.4875f * CC_CONTENT_SCALE_FACTOR())); // the text's bounding box seees too high, 0.4875 is there to compensate, this number was eyeballed :( //
+        m_fontQuad = CGSizeMake(ceilf(((fontRect.size.width - fontRect.origin.x) / units) * m_fontSize * 0.325f * CC_CACA_SCALE_FACTOR), // the text's bounding box seees too wide, 0.325 is there to compensate, this number was eyeballed :( //
+                                    ceilf(((fontRect.size.height - fontRect.origin.y) / units) * m_fontSize * 0.4875f * CC_CACA_SCALE_FACTOR)); // the text's bounding box seees too high, 0.4875 is there to compensate, this number was eyeballed :( //
         
         CGFontRelease(font);
         
@@ -337,8 +341,8 @@ struct caca_dither
                 float y = ((int)(i / m_cacaContextSize.width));
                 
                 // Atlas: Vertex
-                float x1 = (x * m_fontQuad.width);
-                float y1 = (y * m_fontQuad.height);
+                float x1 = x * m_fontQuad.width;
+                float y1 = y * m_fontQuad.height;
                 float x2 = x1 + m_fontQuad.width;
                 float y2 = y1 + m_fontQuad.height;
                 
@@ -348,8 +352,7 @@ struct caca_dither
                 m_quadBuffers[b][i].tl.vertices = (ccVertex3F) { x1, y2, 0 };
                 m_quadBuffers[b][i].tr.vertices = (ccVertex3F) { x2, y2, 0 };
                 
-                GLubyte byte = (i % 16) * 16;// ? 120 : 255;
-                ccColor4B color = ccc4(byte, byte, byte, 0xff);
+                ccColor4B color = ccc4(0x00, 0x00, 0xff, 0xff);
                 m_quadBuffers[b][i].bl.colors = color;
                 m_quadBuffers[b][i].br.colors = color;
                 m_quadBuffers[b][i].tl.colors = color;
@@ -366,6 +369,12 @@ struct caca_dither
                 
             }
         }
+        
+#if COCOS2D_VERSION > 0x00010100
+        // set the gl program //
+        self.shaderProgram = [[CCShaderCache sharedShaderCache] programForKey:kCCShader_PositionTextureA8Color];
+        self.anchorPoint = CGPointZero;
+#endif
         
         // disable the filter by default //
         m_enabled = NO;
@@ -391,15 +400,15 @@ struct caca_dither
     free(m_indices);
     GLuint name = [[m_fontDictionary objectForKey:@"texture"] unsignedIntegerValue];
     glDeleteTextures(1, &name);
-    [m_fontDictionary release];
+    CC_ARC_RELEASE(m_fontDictionary);
     free(m_quadBuffers[0]);
     free(m_quadBuffers[1]);
     glDeleteFramebuffers(1, &m_frameBuffer);
     glDeleteRenderbuffers(1, &m_renderQuadBuffer);
     free(m_pixelBuffer);
     
-    [m_workerThreadCondition release];
-    [m_workerThreadLock release];
+    CC_ARC_RELEASE(m_workerThreadCondition);
+    CC_ARC_RELEASE(m_workerThreadLock);
     
     [super dealloc];
 }
@@ -409,13 +418,17 @@ struct caca_dither
     if (!m_enabled)
     {
         [((CCDirectorIOS*)[CCDirectorIOS sharedDirector]) setCCCacaFilter:self];
+        if (method_getImplementation(class_getInstanceMethod([CCDirectorIOS class], @selector(drawScene))) != [CCDirectorIOS getCCCacaDrawSceneMethod])
+        {
+            method_exchangeImplementations(class_getInstanceMethod([CCDirectorIOS class], @selector(drawScene)), class_getInstanceMethod([CCDirectorIOS class], @selector(drawSceneCCCacaSceneFilter)));
+        }
     }
     else
     {
         [((CCDirectorIOS*)[CCDirectorIOS sharedDirector]) setCCCacaFilter:nil];
+        method_exchangeImplementations(class_getInstanceMethod([CCDirectorIOS class], @selector(drawScene)), class_getInstanceMethod([CCDirectorIOS class], @selector(drawSceneCCCacaSceneFilter)));
     }
     m_enabled = !m_enabled;
-    method_exchangeImplementations(class_getInstanceMethod([CCDirectorIOS class], @selector(drawScene)), class_getInstanceMethod([CCDirectorIOS class], @selector(drawSceneCCCacaSceneFilter)));
     return m_enabled;
 }
 
@@ -559,6 +572,15 @@ struct caca_dither
                     m_quadBuffers[m_workingQuadBuffer][i].tl.colors = color4;
                     m_quadBuffers[m_workingQuadBuffer][i].tr.colors = color4;
                     
+                    m_quadBuffers[m_workingQuadBuffer][i].bl.texCoords.u = 0;
+                    m_quadBuffers[m_workingQuadBuffer][i].bl.texCoords.v = 0;
+                    m_quadBuffers[m_workingQuadBuffer][i].br.texCoords.u = 0;
+                    m_quadBuffers[m_workingQuadBuffer][i].br.texCoords.v = 0;
+                    m_quadBuffers[m_workingQuadBuffer][i].tl.texCoords.u = 0;
+                    m_quadBuffers[m_workingQuadBuffer][i].tl.texCoords.v = 0;
+                    m_quadBuffers[m_workingQuadBuffer][i].tr.texCoords.u = 0;
+                    m_quadBuffers[m_workingQuadBuffer][i].tr.texCoords.v = 0;
+                    
                     continue;
                 }
                 
@@ -603,11 +625,11 @@ struct caca_dither
         
         GLint oldFrameBuffer;
         GLint oldRenderBuffer;
-        glGetIntegerv(CC_GL_FRAMEBUFFER_BINDING, &oldFrameBuffer);
-        glGetIntegerv(GL_RENDERBUFFER_BINDING_OES, &oldRenderBuffer); // not compatible with OSX :( // for now! //
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFrameBuffer);
+        glGetIntegerv(GL_RENDERBUFFER_BINDING, &oldRenderBuffer); // not compatible with OSX :( // for now! //
         
-        glBindFramebufferOES(GL_FRAMEBUFFER_OES, m_frameBuffer);
-        glBindRenderbufferOES(GL_RENDERBUFFER_OES, m_renderBuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, m_renderBuffer);
         
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
@@ -615,8 +637,8 @@ struct caca_dither
         
         glReadPixels(0, 0, m_backingSize.width, m_backingSize.height, GL_RGBA, GL_UNSIGNED_BYTE, m_pixelBuffer);
         
-        glBindFramebuffer(CC_GL_FRAMEBUFFER, oldFrameBuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER_OES, oldRenderBuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, oldFrameBuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, oldRenderBuffer);
         
         [m_workerThreadLock unlock];
     }
@@ -626,6 +648,9 @@ struct caca_dither
 
 -(void) draw
 {
+#if COCOS2D_VERSION == 0x00010100
+    
+    
     #define kQuadSize sizeof(m_quadBuffers[m_renderQuadBuffer][0].bl)
     glBindTexture(GL_TEXTURE_2D, [[m_fontDictionary objectForKey:@"texture"] unsignedIntegerValue]);
     
@@ -649,6 +674,53 @@ struct caca_dither
     glDrawElements(GL_TRIANGLES, m_totalCacaQuads * 6, GL_UNSIGNED_SHORT, m_indices);
     
     glBlendFunc(CC_BLEND_SRC, CC_BLEND_DST);
+    
+    
+#elif COCOS2D_VERSION > 0x00010100
+    
+    kmGLPushMatrix();
+    self.scale = (1.0f / CC_CACA_SCALE_FACTOR);
+    [self transform];
+    
+	CC_NODE_DRAW_SETUP();
+    
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+	glBindTexture(GL_TEXTURE_2D, [[m_fontDictionary objectForKey:@"texture"] unsignedIntegerValue]);
+    
+	//
+	// Attributes
+	//
+    
+	ccGLEnableVertexAttribs( kCCVertexAttribFlag_PosColorTex );
+    
+    #define kQuadSize sizeof(m_quadBuffers[m_renderQuadBuffer][0].bl)
+	long offset = (long)&m_quadBuffers[m_renderQuadBuffer][0];
+    
+	// vertex
+	NSInteger diff = offsetof( ccV3F_C4B_T2F, vertices);
+	glVertexAttribPointer(kCCVertexAttrib_Position, 3, GL_FLOAT, GL_FALSE, kQuadSize, (void*) (offset + diff));
+    
+	// texCoods
+	diff = offsetof( ccV3F_C4B_T2F, texCoords);
+	glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, kQuadSize, (void*)(offset + diff));
+    
+	// color
+	diff = offsetof( ccV3F_C4B_T2F, colors);
+	glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (void*)(offset + diff));
+    
+    
+	glDrawElements(GL_TRIANGLES, m_totalCacaQuads * 6, GL_UNSIGNED_SHORT, m_indices);
+    
+    ccGLBlendFunc(CC_BLEND_SRC, CC_BLEND_DST);
+    
+	CHECK_GL_ERROR_DEBUG();
+	CC_INCREMENT_GL_DRAWS(1);
+
+    self.scale = 1.0f;
+    kmGLPopMatrix();
+    
+#endif
 }
 
 @end
