@@ -1,7 +1,7 @@
 CCCaca
 ======
 
-ASCII Art for Cocos2D iOS 1.x (Can be easily ported to 2.x)
+ASCII Art for Cocos2D iOS 1.1, 2.0 and 2.1. Supports ARC.
 
 What can I do with CCCaca?
 --------------------------
@@ -36,6 +36,7 @@ Maybe?
    * The rendering is multithreaded, be carful if you modify it.
    * CCCaca depends on having an untouched CCDirectorIOS *drawScene* method, it uses method swizzling to plugin itself.
    * Changing the *gamma* property only affects colors using the *kCCCacaRenderLibCacaColor* render color mode.
+   * CCCacaScreenFilter inherits from CCScene, you can add other nodes to it and they won't be filtered. There are other crazy ways to use this functionality.
 
 Licensing
 ---------
