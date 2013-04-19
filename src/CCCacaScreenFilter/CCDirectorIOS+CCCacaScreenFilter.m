@@ -23,11 +23,27 @@
 #   define totalFrames_ _totalFrames
 #endif
 
+// COCOS 0.99 COMPATIBILITY LAYER //
+#if !defined(CC_ARC_RETAIN)
+#   if defined(__has_feature) && __has_feature(objc_arc)
+        // ARC (used for inline functions)
+#       define CC_ARC_RETAIN(value)	value
+#       define CC_ARC_RELEASE(value)	value = 0
+#       define CC_ARC_UNSAFE_RETAINED	__unsafe_unretained
+
+#   else
+        // No ARC
+#       define CC_ARC_RETAIN(value)	[value retain]
+#       define CC_ARC_RELEASE(value)	[value release]
+#       define CC_ARC_UNSAFE_RETAINED
+#   endif
+#endif
+
 #pragma mark - CCDirectorIOS Forward Declarations
 @interface CCDirectorIOS (CCCacaScreenFilterForwardDeclarations) // will not be implemented //
 -(void) calculateDeltaTime;
 -(void) setNextScene;
-#if COCOS2D_VERSION == 0x00010100
+#if COCOS2D_VERSION <= 0x00010100
 -(void) showFPS;
 #elif COCOS2D_VERSION > 0x00010100
 -(void) showStats;
@@ -58,7 +74,7 @@
 
 -(void) drawSceneCCCacaSceneFilter
 {
-#if COCOS2D_VERSION == 0x00010100
+#if COCOS2D_VERSION <= 0x00010100
     
     
     /* calculate "global" dt */

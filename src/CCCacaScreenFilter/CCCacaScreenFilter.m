@@ -16,6 +16,22 @@
 //#import "CCGLProgram.h"
 #import "cocos2d.h"
 
+// COCOS 0.99 COMPATIBILITY LAYER //
+#if !defined(CC_ARC_RETAIN)
+#   if defined(__has_feature) && __has_feature(objc_arc)
+// ARC (used for inline functions)
+#       define CC_ARC_RETAIN(value)	value
+#       define CC_ARC_RELEASE(value)	value = 0
+#       define CC_ARC_UNSAFE_RETAINED	__unsafe_unretained
+
+#   else
+// No ARC
+#       define CC_ARC_RETAIN(value)	[value retain]
+#       define CC_ARC_RELEASE(value)	[value release]
+#       define CC_ARC_UNSAFE_RETAINED
+#   endif
+#endif
+
 #pragma mark - CCCaca Defines
 #define CC_CACA_FONT_NAME "AmericanTypewriter-Bold"
 #define CC_CACA_SCALE_FACTOR CC_CONTENT_SCALE_FACTOR()
@@ -648,7 +664,7 @@ struct caca_dither
 
 -(void) draw
 {
-#if COCOS2D_VERSION == 0x00010100
+#if COCOS2D_VERSION <= 0x00010100
     
     
     #define kQuadSize sizeof(m_quadBuffers[m_renderQuadBuffer][0].bl)
